@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="Mapa LATAM Completo", layout="wide")
+st.set_page_config(page_title="Mapa LATAM - 18 Países", layout="wide")
 
 st.markdown("""
     <style>
@@ -10,7 +10,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-html_mapa_final = r"""
+html_mapa_ajustado = r"""
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -94,7 +94,7 @@ html_mapa_final = r"""
         }
     </style>
 </head>
-<body onclick="iniciarMusica()">
+<body onclick="habilitarAudio()">
 
     <header>
         <h1>Mapa Interactivo - América Latina</h1>
@@ -127,26 +127,26 @@ html_mapa_final = r"""
     </audio>
 
     <script>
-        // LISTA DE PAÍSES INCLUYENDO REPÚBLICA DOMINICANA
-        const targetCountries = ["Argentina", "Bolivia", "Brazil", "Chile", "Colombia", "Costa Rica", "Cuba", "Dominican Republic", "Ecuador", "El Salvador", "Guatemala", "Honduras", "Mexico", "Nicaragua", "Panama", "Paraguay", "Peru", "Uruguay", "Venezuela"];
+        // Lista sin República Dominicana para mayor precisión
+        const targetCountries = ["Argentina", "Bolivia", "Brazil", "Chile", "Colombia", "Costa Rica", "Cuba", "Ecuador", "El Salvador", "Guatemala", "Honduras", "Mexico", "Nicaragua", "Panama", "Paraguay", "Peru", "Uruguay", "Venezuela"];
         
         const nameMap = {
             "Argentina": "Argentina", "Bolivia": "Bolivia", "Brazil": "Brasil", "Chile": "Chile", 
             "Colombia": "Colombia", "Costa Rica": "Costa Rica", "Cuba": "Cuba", 
-            "Dominican Republic": "República Dominicana", "Ecuador": "Ecuador", 
-            "El Salvador": "El Salvador", "Guatemala": "Guatemala", "Honduras": "Honduras", 
-            "Mexico": "México", "Nicaragua": "Nicaragua", "Panama": "Panamá", 
-            "Paraguay": "Paraguay", "Peru": "Perú", "Uruguay": "Uruguay", "Venezuela": "Venezuela"
+            "Ecuador": "Ecuador", "El Salvador": "El Salvador", "Guatemala": "Guatemala", 
+            "Honduras": "Honduras", "Mexico": "México", "Nicaragua": "Nicaragua", 
+            "Panama": "Panamá", "Paraguay": "Paraguay", "Peru": "Perú", 
+            "Uruguay": "Uruguay", "Venezuela": "Venezuela"
         };
 
         let completed = 0;
         let draggedName = "";
-        let audioHabilitado = false;
+        let audioOk = false;
 
-        function iniciarMusica() {
-            if(!audioHabilitado) {
+        function habilitarAudio() {
+            if(!audioOk) {
                 const c = document.getElementById('s-cumbia');
-                c.play().then(() => { c.pause(); audioHabilitado = true; });
+                c.play().then(() => { c.pause(); audioOk = true; });
             }
         }
 
@@ -158,7 +158,6 @@ html_mapa_final = r"""
             const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
             const countries = topojson.feature(world, world.objects.countries).features;
             
-            // Filtramos para asegurar que aparezcan los del Caribe
             const latamData = countries.filter(d => targetCountries.includes(d.properties.name));
 
             svg.selectAll("path")
@@ -206,8 +205,7 @@ html_mapa_final = r"""
         }
 
         function finish() {
-            const cumbia = document.getElementById('s-cumbia');
-            cumbia.play();
+            document.getElementById('s-cumbia').play();
             document.getElementById('final-screen').classList.add('active');
             var duration = 5 * 1000;
             var end = Date.now() + duration;
@@ -224,4 +222,4 @@ html_mapa_final = r"""
 </html>
 """
 
-components.html(html_mapa_final, height=950, scrolling=False)
+components.html(html_mapa_ajustado, height=950, scrolling=False)

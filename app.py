@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="Mapa LATAM - Música Garantizada", layout="wide")
+st.set_page_config(page_title="Mapa interactivo latinoamérica", layout="wide")
 
 st.markdown("""
     <style>
@@ -98,7 +98,7 @@ html_mapa_musica_fix = r"""
 
     <header>
         <h1>Mapa Interactivo - América Latina</h1>
-        <p style="color: #00796b; font-weight: bold;">Pau Spanish Teacher</p>
+        <p style="color: #00796b; font-weight: bold;">PaoSpanishTeacher</p>
     </header>
 
     <div class="game-layout">

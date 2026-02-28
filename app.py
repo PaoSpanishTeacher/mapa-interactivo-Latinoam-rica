@@ -10,160 +10,129 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-html_mapa_latam = r"""
+html_mapa_perfecto = r"""
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa Interactivo - América Latina</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #ff4757;
-            --secondary: #2f3542;
-            --success: #2ed573;
-            --bg: #f0f2f5;
-        }
-
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-
+        
         body {
             font-family: 'Quicksand', sans-serif;
             background: #fff9e6;
-            background-image: radial-gradient(#ff475711 2px, transparent 2px);
-            background-size: 30px 30px;
             display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh; overflow-x: hidden;
-            padding: 20px;
+            padding-top: 80px; /* Espacio para que el título no se corte */
+            min-height: 100vh;
         }
 
-        header { text-align: center; margin-bottom: 20px; }
-        h1 { font-family: 'Fredoka', sans-serif; color: #d35400; font-size: 2.5rem; text-shadow: 2px 2px white; }
-        .brand { color: #2d6a4f; font-weight: bold; font-size: 1.2rem; }
-
-        .game-container {
-            display: grid; grid-template-columns: 250px 1fr;
-            gap: 20px; width: 95%; max-width: 1200px;
-            background: rgba(255,255,255,0.8); padding: 20px;
-            border-radius: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px); border: 5px solid #fff;
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { font-family: 'Fredoka', sans-serif; color: #d35400; font-size: 3rem; text-shadow: 2px 2px white; }
+        
+        .main-container {
+            display: grid; grid-template-columns: 280px 1fr;
+            gap: 30px; width: 95%; max-width: 1200px;
+            background: white; padding: 30px; border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
 
-        /* Panel de Países */
-        .countries-panel {
-            display: flex; flex-direction: column; gap: 8px;
+        /* Lista de Países */
+        .countries-list {
+            display: flex; flex-direction: column; gap: 10px;
             max-height: 700px; overflow-y: auto; padding-right: 10px;
         }
-        .country-tag {
-            background: white; border: 2px solid #e0e0e0;
-            padding: 10px 15px; border-radius: 12px;
-            cursor: grab; font-weight: 700; color: #444;
-            transition: 0.2s; text-align: center;
-            box-shadow: 0 4px 0 #ddd;
+        .country-item {
+            background: #ff7675; color: white; padding: 12px;
+            border-radius: 12px; cursor: grab; text-align: center;
+            font-weight: bold; font-size: 1.1rem; transition: 0.3s;
+            box-shadow: 0 4px 0 #d63031;
         }
-        .country-tag:active { cursor: grabbing; transform: translateY(2px); box-shadow: none; }
-        .country-tag.placed { opacity: 0; pointer-events: none; }
+        .country-item.placed { opacity: 0; pointer-events: none; }
 
-        /* Mapa SVG */
-        .map-wrapper {
-            position: relative; display: flex; justify-content: center; align-items: center;
-            background: #e3f2fd; border-radius: 20px; border: 3px solid #bbdefb;
-            padding: 10px; min-height: 600px;
-        }
-        svg { width: 100%; height: auto; max-height: 750px; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1)); }
-        
-        path {
-            fill: #ffffff; stroke: #666; stroke-width: 0.8;
-            transition: 0.3s; cursor: pointer;
-        }
-        path.highlight { fill: #fffde7; stroke-width: 2; stroke: #ff4757; }
-        path.correct { fill: var(--success) !important; stroke: #1b5e20; stroke-width: 1; }
+        /* Mapa */
+        .map-container { position: relative; background: #e3f2fd; border-radius: 20px; overflow: hidden; border: 2px solid #74b9ff; }
+        svg { width: 100%; height: 750px; }
+        path { fill: #f9f9f9; stroke: #636e72; stroke-width: 1; transition: 0.3s; cursor: pointer; }
+        path:hover { fill: #ffeaa7; }
+        path.correct { fill: #55efc4 !important; stroke: #00b894; }
 
-        /* Mensajes Pop-up */
-        #status-msg {
-            position: fixed; top: 100px; left: 50%; transform: translateX(-50%) scale(0);
-            padding: 20px 50px; border-radius: 50px; color: white;
-            font-size: 2.5rem; font-weight: 900; z-index: 1000;
-            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            font-family: 'Fredoka', sans-serif; pointer-events: none;
+        /* Popups */
+        #msg {
+            position: fixed; top: 120px; left: 50%; transform: translateX(-50%) scale(0);
+            padding: 15px 40px; border-radius: 50px; color: white; font-size: 2rem;
+            font-weight: bold; z-index: 1000; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        #status-msg.show { transform: translateX(-50%) scale(1); }
+        #msg.show { transform: translateX(-50%) scale(1); }
 
         /* Pantalla Final */
-        #final-overlay {
+        #final-screen {
             position: fixed; inset: 0; background: rgba(255,255,255,0.98);
-            z-index: 2000; display: none; flex-direction: column;
-            justify-content: center; align-items: center; text-align: center;
+            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2000;
         }
-        #final-overlay.active { display: flex; animation: fadeIn 0.5s; }
-
-        .dancers { font-size: 100px; display: flex; gap: 50px; margin: 20px 0; }
-        .dancer { animation: dance 0.6s infinite alternate ease-in-out; }
-        @keyframes dance { from { transform: translateY(0) rotate(-5deg); } to { transform: translateY(-20px) rotate(5deg); } }
-
+        #final-screen.active { display: flex; }
+        .celebration-box { text-align: center; }
+        .dancers { display: flex; gap: 40px; justify-content: center; margin: 30px; }
+        .dancer { font-size: 8rem; animation: bailoteo 0.6s infinite alternate; }
+        @keyframes bailoteo { from { transform: rotate(-10deg) translateY(0); } to { transform: rotate(10deg) translateY(-20px); } }
+        
         .btn-restart {
-            background: #ff4757; color: white; border: none;
-            padding: 15px 40px; border-radius: 50px; font-size: 1.5rem;
-            cursor: pointer; margin-top: 20px; font-weight: bold;
-            box-shadow: 0 6px 0 #b33939;
+            background: #00b894; color: white; border: none; padding: 20px 50px;
+            font-size: 2rem; border-radius: 50px; cursor: pointer; font-family: 'Fredoka', sans-serif;
         }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
     <header>
         <h1>Mapa Interactivo - América Latina</h1>
-        <div class="brand">PaoSpanishTeacher</div>
+        <p style="font-weight: bold; color: #2d3436;">Pau Spanish Teacher</p>
     </header>
 
-    <div class="game-container">
-        <div class="countries-panel" id="external-list">
-            </div>
-
-        <div class="map-wrapper" id="drop-area">
-            <svg id="latam-svg" viewBox="250 50 600 900" xmlns="http://www.w3.org/2000/svg">
-                <path id="México" d="M305,252 L315,245 L346,243 L377,262 L411,310 L448,318 L460,344 L440,366 L400,345 L350,340 L310,290 Z" />
-                <path id="Guatemala" d="M465,350 L480,350 L485,365 L470,375 Z" />
-                <path id="Honduras" d="M485,355 L510,355 L510,370 L490,375 Z" />
-                <path id="El Salvador" d="M485,378 L498,378 L495,385 L485,385 Z" />
-                <path id="Nicaragua" d="M505,375 L525,385 L520,405 L500,400 Z" />
-                <path id="Costa Rica" d="M520,410 L535,420 L528,430 L515,425 Z" />
-                <path id="Panamá" d="M540,425 L565,425 L570,435 L545,445 Z" />
-                <path id="Cuba" d="M460,280 L520,295 L515,305 L460,290 Z" />
-                <path id="República Dominicana" d="M560,305 L590,305 L590,315 L560,315 Z" />
-                <path id="Colombia" d="M575,445 L625,455 L630,510 L590,520 L570,480 Z" />
-                <path id="Venezuela" d="M630,445 L700,455 L705,495 L635,505 Z" />
-                <path id="Ecuador" d="M575,525 L610,525 L605,555 L580,555 Z" />
-                <path id="Perú" d="M585,565 L660,565 L690,670 L640,700 L590,620 Z" />
-                <path id="Bolivia" d="M680,630 L745,645 L755,715 L705,735 L675,690 Z" />
-                <path id="Paraguay" d="M755,730 L800,740 L805,785 L760,795 Z" />
-                <path id="Chile" d="M675,745 L705,745 L740,950 L720,955 Z" />
-                <path id="Argentina" d="M710,750 L755,735 L810,790 L815,950 L745,950 Z" />
-                <path id="Uruguay" d="M815,795 L845,805 L840,830 L815,825 Z" />
-                <path id="Brasil" d="M650,515 L710,465 L810,500 L880,620 L860,780 L760,720 L665,630 Z" />
+    <div class="main-container">
+        <div class="countries-list" id="list"></div>
+        <div class="map-container">
+            <svg id="latam-map" viewBox="200 150 600 800" xmlns="http://www.w3.org/2000/svg">
+                <path id="México" d="M210,210 L250,215 L320,300 L380,350 L350,380 L250,350 Z" />
+                <path id="Cuba" d="M400,300 L460,320 L450,330 L400,310 Z" />
+                <path id="República Dominicana" d="M500,330 L540,330 L540,345 L500,345 Z" />
+                <path id="Guatemala" d="M385,385 L410,385 L410,410 L385,410 Z" />
+                <path id="Honduras" d="M415,390 L450,390 L450,410 L415,410 Z" />
+                <path id="El Salvador" d="M415,415 L435,415 L435,425 L415,425 Z" />
+                <path id="Nicaragua" d="M440,415 L475,415 L475,445 L440,445 Z" />
+                <path id="Costa Rica" d="M465,455 L485,455 L485,475 L465,475 Z" />
+                <path id="Panamá" d="M490,465 L530,465 L530,485 L490,485 Z" />
+                <path id="Colombia" d="M515,495 L580,500 L590,580 L540,590 L510,540 Z" />
+                <path id="Venezuela" d="M585,495 L680,505 L675,580 L595,580 Z" />
+                <path id="Ecuador" d="M510,595 L550,595 L545,640 L515,630 Z" />
+                <path id="Perú" d="M540,645 L620,645 L650,780 L580,820 L540,700 Z" />
+                <path id="Bolivia" d="M630,730 L720,740 L710,850 L640,840 Z" />
+                <path id="Paraguay" d="M710,860 L770,860 L770,920 L710,920 Z" />
+                <path id="Chile" d="M635,850 L670,850 L690,1200 L660,1200 Z" />
+                <path id="Argentina" d="M675,850 L725,850 L800,1200 L720,1200 Z" />
+                <path id="Uruguay" d="M780,930 L820,930 L820,970 L780,970 Z" />
+                <path id="Brasil" d="M600,585 L680,585 L850,650 L850,900 L730,850 L630,750 Z" />
             </svg>
         </div>
     </div>
 
-    <div id="status-msg"></div>
+    <div id="msg"></div>
 
-    <div id="final-overlay">
-        <h1>¡Excelente! Sigue aprendiendo español.</h1>
-        <div class="dancers">
-            <span class="dancer">💃</span>
-            <span class="dancer">🕺</span>
+    <div id="final-screen">
+        <div class="celebration-box">
+            <h1>¡Excelente! Sigue aprendiendo español.</h1>
+            <div class="dancers">
+                <div class="dancer">💃</div>
+                <div class="dancer">🕺</div>
+            </div>
+            <button class="btn-restart" onclick="location.reload()">Jugar otra vez</button>
         </div>
-        <p style="font-size: 1.5rem; color: #d35400;">¡Dominas la geografía de Latinoamérica!</p>
-        <button class="btn-restart" onclick="location.reload()">Jugar otra vez</button>
     </div>
 
-    <audio id="snd-success" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"></audio>
-    <audio id="snd-error" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
-    <audio id="snd-party" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" loop></audio>
+    <audio id="audio-win" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"></audio>
+    <audio id="audio-error" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+    <audio id="audio-cumbia" loop src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"></audio>
 
     <script>
         const countries = [
@@ -174,81 +143,64 @@ html_mapa_latam = r"""
         ];
 
         let completed = 0;
-        let draggedName = null;
+        let selectedName = "";
 
         function init() {
-            const list = document.getElementById('external-list');
-            const shuffled = [...countries].sort(() => Math.random() - 0.5);
-
-            shuffled.forEach(c => {
-                const div = document.createElement('div');
-                div.className = 'country-tag';
-                div.textContent = c;
-                div.draggable = true;
-                div.id = 'tag-' + c;
-                div.addEventListener('dragstart', (e) => {
-                    draggedName = c;
+            const listDiv = document.getElementById('list');
+            [...countries].sort(() => Math.random() - 0.5).forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'country-item';
+                item.textContent = c;
+                item.draggable = true;
+                item.id = "tag-" + c;
+                item.onselectstart = () => false;
+                item.ondragstart = (e) => {
+                    selectedName = c;
                     e.dataTransfer.setData('text', c);
-                });
-                list.appendChild(div);
+                };
+                listDiv.appendChild(item);
             });
 
-            // Configurar interactividad del mapa
-            document.querySelectorAll('path').forEach(p => {
-                p.addEventListener('dragover', (e) => {
+            document.querySelectorAll('path').forEach(path => {
+                path.ondragover = (e) => e.preventDefault();
+                path.ondrop = (e) => {
                     e.preventDefault();
-                    if (!p.classList.contains('correct')) p.classList.add('highlight');
-                });
-
-                p.addEventListener('dragleave', () => {
-                    p.classList.remove('highlight');
-                });
-
-                p.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    p.classList.remove('highlight');
-                    const droppedOn = p.id;
-                    handleDrop(droppedOn, p);
-                });
+                    const targetId = path.id;
+                    if (selectedName === targetId) {
+                        path.classList.add('correct');
+                        document.getElementById("tag-" + selectedName).classList.add('placed');
+                        document.getElementById('audio-win').play();
+                        showMsg("¡Excelente!", "#00b894");
+                        completed++;
+                        if(completed === countries.length) finishGame();
+                    } else {
+                        document.getElementById('audio-error').play();
+                        showMsg("Intenta otra vez", "#ff7675");
+                    }
+                };
             });
         }
 
-        function handleDrop(targetId, element) {
-            if (draggedName === targetId) {
-                // ACIERTO
-                element.classList.add('correct');
-                document.getElementById('tag-' + draggedName).classList.add('placed');
-                document.getElementById('snd-success').play();
-                showPopup("¡Excelente!", "#2ed573");
-                completed++;
-                
-                if (completed === countries.length) showFinal();
-            } else {
-                // ERROR
-                document.getElementById('snd-error').play();
-                showPopup("Intenta otra vez", "#ff4757");
-            }
-        }
-
-        function showPopup(txt, color) {
-            const m = document.getElementById('status-msg');
+        function showMsg(txt, color) {
+            const m = document.getElementById('msg');
             m.textContent = txt;
             m.style.background = color;
             m.classList.add('show');
             setTimeout(() => m.classList.remove('show'), 1000);
         }
 
-        function showFinal() {
-            document.getElementById('snd-party').play();
-            document.getElementById('final-overlay').classList.add('active');
-            confetti({
-                particleCount: 200,
-                spread: 100,
-                origin: { y: 0.6 }
-            });
-            // Globos
-            for(let i=0; i<15; i++) {
-                setTimeout(createBalloon, i * 200);
+        function finishGame() {
+            // Reproducir música colombiana (Cumbia)
+            const cumbia = document.getElementById('audio-cumbia');
+            cumbia.src = "https://www.chosic.com/wp-content/uploads/2021/07/The-Joy-of-Success-Cumbia.mp3"; 
+            cumbia.play();
+
+            document.getElementById('final-screen').classList.add('active');
+            confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+            
+            // Efecto de globos
+            for(let i=0; i<20; i++) {
+                setTimeout(createBalloon, i * 150);
             }
         }
 
@@ -260,10 +212,9 @@ html_mapa_latam = r"""
             b.style.fontSize = '3rem';
             b.textContent = '🎈';
             b.style.transition = 'transform 6s linear';
-            b.style.zIndex = '2001';
             document.body.appendChild(b);
             setTimeout(() => b.style.transform = 'translateY(-120vh)', 50);
-            setTimeout(() => b.remove(), 6000);
+            setTimeout(() => b.remove(), 6500);
         }
 
         init();
@@ -272,4 +223,4 @@ html_mapa_latam = r"""
 </html>
 """
 
-components.html(html_mapa_latam, height=900, scrolling=False)
+components.html(html_mapa_perfecto, height=950, scrolling=False)

@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="Mapa Interactivo Latinoamérica", layout="wide")
+st.set_page_config(page_title="Mapa LATAM Interactivo", layout="wide")
 
 st.markdown("""
     <style>
@@ -10,76 +10,79 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-html_mapa_perfecto = r"""
+html_mapa_real = r"""
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-        
         body {
             font-family: 'Quicksand', sans-serif;
-            background: #fff9e6;
+            background: #e0f7fa;
+            padding-top: 100px; /* Evita que el título se corte */
             display: flex; flex-direction: column; align-items: center;
-            padding-top: 80px; /* Espacio para que el título no se corte */
             min-height: 100vh;
         }
-
-        header { text-align: center; margin-bottom: 30px; }
-        h1 { font-family: 'Fredoka', sans-serif; color: #d35400; font-size: 3rem; text-shadow: 2px 2px white; }
+        header { text-align: center; margin-bottom: 20px; }
+        h1 { font-family: 'Fredoka', sans-serif; color: #00695c; font-size: 2.8rem; text-shadow: 2px 2px white; }
         
-        .main-container {
-            display: grid; grid-template-columns: 280px 1fr;
-            gap: 30px; width: 95%; max-width: 1200px;
-            background: white; padding: 30px; border-radius: 30px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        .game-layout {
+            display: grid; grid-template-columns: 260px 1fr;
+            gap: 20px; width: 95%; max-width: 1100px;
+            background: white; padding: 25px; border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
         }
 
-        /* Lista de Países */
-        .countries-list {
-            display: flex; flex-direction: column; gap: 10px;
-            max-height: 700px; overflow-y: auto; padding-right: 10px;
+        .sidebar {
+            display: flex; flex-direction: column; gap: 8px;
+            max-height: 650px; overflow-y: auto; padding: 10px;
+            background: #f1f8e9; border-radius: 15px;
         }
-        .country-item {
-            background: #ff7675; color: white; padding: 12px;
-            border-radius: 12px; cursor: grab; text-align: center;
-            font-weight: bold; font-size: 1.1rem; transition: 0.3s;
-            box-shadow: 0 4px 0 #d63031;
+        .country-chip {
+            background: #ff7043; color: white; padding: 10px;
+            border-radius: 10px; cursor: grab; text-align: center;
+            font-weight: bold; box-shadow: 0 4px 0 #d84315; transition: 0.2s;
         }
-        .country-item.placed { opacity: 0; pointer-events: none; }
+        .country-chip:active { transform: translateY(3px); box-shadow: none; }
+        .country-chip.hidden { opacity: 0; pointer-events: none; }
 
-        /* Mapa */
-        .map-container { position: relative; background: #e3f2fd; border-radius: 20px; overflow: hidden; border: 2px solid #74b9ff; }
-        svg { width: 100%; height: 750px; }
-        path { fill: #f9f9f9; stroke: #636e72; stroke-width: 1; transition: 0.3s; cursor: pointer; }
-        path:hover { fill: #ffeaa7; }
-        path.correct { fill: #55efc4 !important; stroke: #00b894; }
-
-        /* Popups */
-        #msg {
-            position: fixed; top: 120px; left: 50%; transform: translateX(-50%) scale(0);
-            padding: 15px 40px; border-radius: 50px; color: white; font-size: 2rem;
-            font-weight: bold; z-index: 1000; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .map-area {
+            background: #bbdefb; border-radius: 20px;
+            position: relative; display: flex; justify-content: center; align-items: center;
+            border: 4px solid white;
         }
-        #msg.show { transform: translateX(-50%) scale(1); }
+        svg { width: 100%; height: auto; max-height: 700px; }
+        
+        /* Estilo real para los países */
+        path { fill: #f5f5f5; stroke: #455a64; stroke-width: 0.5; transition: 0.3s; cursor: pointer; }
+        path:hover { fill: #fff9c4; }
+        path.correct { fill: #4caf50 !important; stroke: #1b5e20; stroke-width: 1; }
 
-        /* Pantalla Final */
+        #alert {
+            position: fixed; top: 150px; left: 50%; transform: translateX(-50%) scale(0);
+            padding: 15px 40px; border-radius: 50px; color: white;
+            font-size: 2rem; font-weight: bold; z-index: 1000;
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #alert.show { transform: translateX(-50%) scale(1); }
+
+        /* Final con Cumbia */
         #final-screen {
-            position: fixed; inset: 0; background: rgba(255,255,255,0.98);
-            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2000;
+            position: fixed; inset: 0; background: rgba(255,255,255,0.95);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 2000; text-align: center;
         }
         #final-screen.active { display: flex; }
-        .celebration-box { text-align: center; }
-        .dancers { display: flex; gap: 40px; justify-content: center; margin: 30px; }
-        .dancer { font-size: 8rem; animation: bailoteo 0.6s infinite alternate; }
-        @keyframes bailoteo { from { transform: rotate(-10deg) translateY(0); } to { transform: rotate(10deg) translateY(-20px); } }
+        .dancer-container { display: flex; gap: 50px; margin: 30px; }
+        .dancer { font-size: 7rem; animation: jump 0.5s infinite alternate; }
+        @keyframes jump { from { transform: translateY(0); } to { transform: translateY(-30px); } }
         
-        .btn-restart {
-            background: #00b894; color: white; border: none; padding: 20px 50px;
-            font-size: 2rem; border-radius: 50px; cursor: pointer; font-family: 'Fredoka', sans-serif;
+        .restart-btn {
+            background: #00c853; color: white; border: none; padding: 20px 40px;
+            font-size: 1.8rem; border-radius: 50px; cursor: pointer; font-family: 'Fredoka';
         }
     </style>
 </head>
@@ -87,140 +90,107 @@ html_mapa_perfecto = r"""
 
     <header>
         <h1>Mapa Interactivo - América Latina</h1>
-        <p style="font-weight: bold; color: #2d3436;">Pau Spanish Teacher</p>
+        <p style="color: #00796b; font-weight: bold;">Pau Spanish Teacher</p>
     </header>
 
-    <div class="main-container">
-        <div class="countries-list" id="list"></div>
-        <div class="map-container">
-            <svg id="latam-map" viewBox="200 150 600 800" xmlns="http://www.w3.org/2000/svg">
-                <path id="México" d="M210,210 L250,215 L320,300 L380,350 L350,380 L250,350 Z" />
-                <path id="Cuba" d="M400,300 L460,320 L450,330 L400,310 Z" />
-                <path id="República Dominicana" d="M500,330 L540,330 L540,345 L500,345 Z" />
-                <path id="Guatemala" d="M385,385 L410,385 L410,410 L385,410 Z" />
-                <path id="Honduras" d="M415,390 L450,390 L450,410 L415,410 Z" />
-                <path id="El Salvador" d="M415,415 L435,415 L435,425 L415,425 Z" />
-                <path id="Nicaragua" d="M440,415 L475,415 L475,445 L440,445 Z" />
-                <path id="Costa Rica" d="M465,455 L485,455 L485,475 L465,475 Z" />
-                <path id="Panamá" d="M490,465 L530,465 L530,485 L490,485 Z" />
-                <path id="Colombia" d="M515,495 L580,500 L590,580 L540,590 L510,540 Z" />
-                <path id="Venezuela" d="M585,495 L680,505 L675,580 L595,580 Z" />
-                <path id="Ecuador" d="M510,595 L550,595 L545,640 L515,630 Z" />
-                <path id="Perú" d="M540,645 L620,645 L650,780 L580,820 L540,700 Z" />
-                <path id="Bolivia" d="M630,730 L720,740 L710,850 L640,840 Z" />
-                <path id="Paraguay" d="M710,860 L770,860 L770,920 L710,920 Z" />
-                <path id="Chile" d="M635,850 L670,850 L690,1200 L660,1200 Z" />
-                <path id="Argentina" d="M675,850 L725,850 L800,1200 L720,1200 Z" />
-                <path id="Uruguay" d="M780,930 L820,930 L820,970 L780,970 Z" />
-                <path id="Brasil" d="M600,585 L680,585 L850,650 L850,900 L730,850 L630,750 Z" />
+    <div class="game-layout">
+        <div class="sidebar" id="list"></div>
+        <div class="map-area">
+            <svg viewBox="0 0 1000 1200" xmlns="http://www.w3.org/2000/svg">
+                <path id="México" d="M110,143 L142,143 L162,159 L221,178 L265,225 L292,238 L296,256 L273,284 L204,271 L151,234 L121,215 Z" />
+                <path id="Cuba" d="M295,188 L355,208 L348,220 L290,205 Z" />
+                <path id="República Dominicana" d="M400,215 L435,215 L435,230 L400,230 Z" />
+                <path id="Guatemala" d="M290,270 L315,270 L310,295 L285,295 Z" />
+                <path id="Honduras" d="M318,275 L355,275 L355,295 L320,300 Z" />
+                <path id="El Salvador" d="M315,302 L335,302 L332,312 L315,312 Z" />
+                <path id="Nicaragua" d="M345,305 L375,315 L370,345 L340,340 Z" />
+                <path id="Costa Rica" d="M365,350 L390,360 L385,380 L360,375 Z" />
+                <path id="Panamá" d="M395,365 L435,365 L440,385 L400,395 Z" />
+                <path id="Colombia" d="M415,410 L480,420 L495,520 L440,540 L410,480 Z" />
+                <path id="Venezuela" d="M485,415 L585,425 L580,510 L495,510 Z" />
+                <path id="Ecuador" d="M405,535 L450,535 L445,590 L410,580 Z" />
+                <path id="Perú" d="M435,595 L530,595 L570,780 L490,830 L440,680 Z" />
+                <path id="Bolivia" d="M550,715 L650,730 L640,860 L570,850 Z" />
+                <path id="Paraguay" d="M645,865 L720,875 L715,960 L650,950 Z" />
+                <path id="Chile" d="M565,855 L600,855 L630,1200 L590,1200 Z" />
+                <path id="Argentina" d="M610,860 L670,860 L730,1190 L640,1190 Z" />
+                <path id="Uruguay" d="M730,965 L780,975 L775,1020 L730,1010 Z" />
+                <path id="Brasil" d="M510,520 L610,515 L820,620 L810,950 L680,860 L545,720 Z" />
             </svg>
         </div>
     </div>
 
-    <div id="msg"></div>
+    <div id="alert"></div>
 
     <div id="final-screen">
-        <div class="celebration-box">
-            <h1>¡Excelente! Sigue aprendiendo español.</h1>
-            <div class="dancers">
-                <div class="dancer">💃</div>
-                <div class="dancer">🕺</div>
-            </div>
-            <button class="btn-restart" onclick="location.reload()">Jugar otra vez</button>
+        <h1 style="color: #e91e63; font-size: 3.5rem;">¡Excelente! Sigue aprendiendo español.</h1>
+        <div class="dancer-container">
+            <div class="dancer">💃</div>
+            <div class="dancer">🕺</div>
         </div>
+        <p style="font-size: 1.5rem; margin-bottom: 20px;">¡Felicidades por completar el mapa!</p>
+        <button class="restart-btn" onclick="location.reload()">Jugar otra vez</button>
     </div>
 
-    <audio id="audio-win" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"></audio>
-    <audio id="audio-error" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
-    <audio id="audio-cumbia" loop src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"></audio>
+    <audio id="s-ok" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"></audio>
+    <audio id="s-no" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+    <audio id="s-cumbia" loop></audio>
 
     <script>
-        const countries = [
-            "México", "Guatemala", "Honduras", "El Salvador", "Nicaragua", 
-            "Costa Rica", "Panamá", "Cuba", "República Dominicana", "Colombia", 
-            "Venezuela", "Ecuador", "Perú", "Bolivia", "Chile", "Argentina", 
-            "Paraguay", "Uruguay", "Brasil"
-        ];
+        const paises = ["México", "Guatemala", "Honduras", "El Salvador", "Nicaragua", "Costa Rica", "Panamá", "Cuba", "República Dominicana", "Colombia", "Venezuela", "Ecuador", "Perú", "Bolivia", "Chile", "Argentina", "Paraguay", "Uruguay", "Brasil"];
+        let correctos = 0;
+        let arrastrando = "";
 
-        let completed = 0;
-        let selectedName = "";
-
-        function init() {
-            const listDiv = document.getElementById('list');
-            [...countries].sort(() => Math.random() - 0.5).forEach(c => {
+        function iniciar() {
+            const lista = document.getElementById('list');
+            [...paises].sort(() => Math.random() - 0.5).forEach(p => {
                 const item = document.createElement('div');
-                item.className = 'country-item';
-                item.textContent = c;
+                item.className = 'country-chip';
+                item.textContent = p;
                 item.draggable = true;
-                item.id = "tag-" + c;
-                item.onselectstart = () => false;
-                item.ondragstart = (e) => {
-                    selectedName = c;
-                    e.dataTransfer.setData('text', c);
-                };
-                listDiv.appendChild(item);
+                item.id = "tag-" + p;
+                item.ondragstart = (e) => { arrastrando = p; e.dataTransfer.setData('text', p); };
+                lista.appendChild(item);
             });
 
             document.querySelectorAll('path').forEach(path => {
                 path.ondragover = (e) => e.preventDefault();
                 path.ondrop = (e) => {
-                    e.preventDefault();
-                    const targetId = path.id;
-                    if (selectedName === targetId) {
+                    if (arrastrando === path.id) {
                         path.classList.add('correct');
-                        document.getElementById("tag-" + selectedName).classList.add('placed');
-                        document.getElementById('audio-win').play();
-                        showMsg("¡Excelente!", "#00b894");
-                        completed++;
-                        if(completed === countries.length) finishGame();
+                        document.getElementById("tag-" + arrastrando).classList.add('hidden');
+                        document.getElementById('s-ok').play();
+                        notificar("¡Excelente!", "#4caf50");
+                        correctos++;
+                        if(correctos === paises.length) celebrar();
                     } else {
-                        document.getElementById('audio-error').play();
-                        showMsg("Intenta otra vez", "#ff7675");
+                        document.getElementById('s-no').play();
+                        notificar("Intenta otra vez", "#f44336");
                     }
                 };
             });
         }
 
-        function showMsg(txt, color) {
-            const m = document.getElementById('msg');
-            m.textContent = txt;
-            m.style.background = color;
-            m.classList.add('show');
-            setTimeout(() => m.classList.remove('show'), 1000);
+        function notificar(txt, color) {
+            const div = document.getElementById('alert');
+            div.textContent = txt;
+            div.style.background = color;
+            div.classList.add('show');
+            setTimeout(() => div.classList.remove('show'), 1000);
         }
 
-        function finishGame() {
-            // Reproducir música colombiana (Cumbia)
-            const cumbia = document.getElementById('audio-cumbia');
-            cumbia.src = "https://www.chosic.com/wp-content/uploads/2021/07/The-Joy-of-Success-Cumbia.mp3"; 
-            cumbia.play();
-
+        function celebrar() {
+            const m = document.getElementById('s-cumbia');
+            m.src = "https://www.chosic.com/wp-content/uploads/2021/07/The-Joy-of-Success-Cumbia.mp3";
+            m.play();
             document.getElementById('final-screen').classList.add('active');
-            confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
-            
-            // Efecto de globos
-            for(let i=0; i<20; i++) {
-                setTimeout(createBalloon, i * 150);
-            }
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         }
 
-        function createBalloon() {
-            const b = document.createElement('div');
-            b.style.position = 'fixed';
-            b.style.bottom = '-50px';
-            b.style.left = Math.random() * 100 + 'vw';
-            b.style.fontSize = '3rem';
-            b.textContent = '🎈';
-            b.style.transition = 'transform 6s linear';
-            document.body.appendChild(b);
-            setTimeout(() => b.style.transform = 'translateY(-120vh)', 50);
-            setTimeout(() => b.remove(), 6500);
-        }
-
-        init();
+        iniciar();
     </script>
 </body>
 </html>
 """
 
-components.html(html_mapa_perfecto, height=950, scrolling=False)
+components.html(html_mapa_real, height=950, scrolling=False)
